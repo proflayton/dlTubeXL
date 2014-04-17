@@ -48,7 +48,6 @@ public class TubeList extends JList<Object>
 				int index, boolean isSelected, boolean cellHasFocus) {
 			Component component = (Component) value;
 			component.setMinimumSize(new Dimension(30,40));
-			System.out.println(((TubeListElement)value).image.getIconHeight());
 			return component;
 		}
 		

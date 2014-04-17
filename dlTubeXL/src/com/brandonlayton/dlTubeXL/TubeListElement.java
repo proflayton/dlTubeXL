@@ -23,11 +23,17 @@ public class TubeListElement extends JPanel
 	{
 		try
 		{
-			this.image = new ImageIcon(ImageIO.read(new URL(imageURL)));
+			this.image = new ImageIcon(
+					Utils.resize(ImageIO.read(new URL(imageURL)),
+								75,75)
+							);
 		}
 		catch(Exception e)
 		{
-			this.image = new ImageIcon(ImageIO.read(Main.class.getClassLoader().getResource("default.jpg")));
+			this.image = new ImageIcon(
+					Utils.resize(ImageIO.read(Main.class.getClassLoader().getResource("default.jpg")),
+							 	75, 75)
+							 );
 		}
 		this.title = title;
 		this.url   = url;
@@ -36,7 +42,7 @@ public class TubeListElement extends JPanel
 		this.add(new JLabel(title,JLabel.CENTER),BorderLayout.NORTH);
 		
 		JLabel imgLabel = new JLabel(image);
-		imgLabel.setMinimumSize(new Dimension(50,50));
+		imgLabel.setMinimumSize(new Dimension(10,10));
 		this.add(imgLabel,BorderLayout.CENTER);
 	}
 	
@@ -44,4 +50,5 @@ public class TubeListElement extends JPanel
 	{
 		return this.url;
 	}
+	
 }
