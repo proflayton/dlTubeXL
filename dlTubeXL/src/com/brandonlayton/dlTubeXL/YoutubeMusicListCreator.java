@@ -2,22 +2,15 @@ package com.brandonlayton.dlTubeXL;
 
 import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
-import java.net.URL;
 import java.util.Vector;
 
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -39,6 +32,7 @@ public class YoutubeMusicListCreator extends JFrame
 	private JTextField 	searchField;
 	private JButton	  	searchButton;
 	private JButton		clearSearchButton;
+	private JButton		dlButton;
 	private TubeList	searchResults;
 	private JTextArea 	selectedArea;
 	private JScrollPane searchScroll;
@@ -46,7 +40,7 @@ public class YoutubeMusicListCreator extends JFrame
 	
 	private static String baseQueryURL = "https://www.youtube.com/results?search_query=";
 
-	private Vector<TubeListElement> selected = new Vector<TubeListElement>();
+	//private Vector<TubeListElement> selected = new Vector<TubeListElement>();
 	
 	public YoutubeMusicListCreator()
 	{
@@ -73,9 +67,16 @@ public class YoutubeMusicListCreator extends JFrame
 		selectedArea.setRows(10);
 		selectedAreaScroll = new JScrollPane(selectedArea);
 		
+		dlButton = new JButton("Download List");
+		dlButton.addActionListener(new DlListener());
+		
 		this.add(topPanel	 ,BorderLayout.NORTH );
-		this.add(searchScroll,BorderLayout.CENTER);
-		this.add(selectedAreaScroll,BorderLayout.SOUTH);
+		
+		JPanel centerArea = new JPanel(new BorderLayout());
+		centerArea.add(searchScroll,BorderLayout.CENTER);
+		centerArea.add(selectedAreaScroll,BorderLayout.EAST);
+		this.add(centerArea,BorderLayout.CENTER);
+		this.add(dlButton,BorderLayout.SOUTH);
 		
 		this.pack();
 	}
@@ -83,6 +84,7 @@ public class YoutubeMusicListCreator extends JFrame
 	private void Search(String query)
 	{
 		try {
+			System.out.println(query);
 			Document doc = Jsoup.connect(baseQueryURL + query).get();
 			Element searchResults = doc.select("#search-results").first();
 			Elements results = searchResults.select(".result-item-padding");
@@ -160,6 +162,15 @@ public class YoutubeMusicListCreator extends JFrame
 		@Override
 		public void mouseReleased(MouseEvent e) { }
 		
+	}
+	
+	private class DlListener implements ActionListener
+	{
+		@Override
+		public void actionPerformed(ActionEvent e) 
+		{
+			
+		}
 	}
 
 	/****

@@ -2,6 +2,7 @@ package com.brandonlayton.dlTubeXL;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -20,8 +21,14 @@ public class TubeListElement extends JPanel
 	
 	public TubeListElement(String imageURL, String title, String url) throws MalformedURLException, IOException
 	{
-		System.out.println(imageURL);
-		this.image = new ImageIcon(ImageIO.read(new URL(imageURL)));
+		try
+		{
+			this.image = new ImageIcon(ImageIO.read(new URL(imageURL)));
+		}
+		catch(Exception e)
+		{
+			this.image = new ImageIcon(ImageIO.read(Main.class.getClassLoader().getResource("default.jpg")));
+		}
 		this.title = title;
 		this.url   = url;
 		
