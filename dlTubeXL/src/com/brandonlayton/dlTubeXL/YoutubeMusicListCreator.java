@@ -249,24 +249,10 @@ public class YoutubeMusicListCreator extends JFrame
 				log("DL PATH: " + dlPath);
 				String path = "";
 				try {
-					String ffmpegCmd = ffmpegExe + " -i \"" + dlPath + "\" \"" + path + title + ".wav\"" ;
+					String ffmpegCmd = ffmpegExe + " -i \"" + dlPath + "\" -f mp2 \"" + path + title + ".mp3\"" ;
 					log(ffmpegCmd);
 					Process ffmpeg = rt.exec(ffmpegCmd);
 					ffmpeg.waitFor();
-					try {
-						String lameCmd = lameExe + " \"" +  path + title + ".wav" + "\" \"" + path + title + ".mp3\"";
-						log(lameCmd);
-						Process lame = rt.exec(lameCmd);
-						in = new BufferedReader(new InputStreamReader(lame.getInputStream()));
-						while ((output = in.readLine()) != null) {
-							System.out.println(output);
-						}
-						lame.waitFor();
-					} catch (IOException e) {
-						e.printStackTrace();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
 					
 				} catch (IOException e) {
 					e.printStackTrace();
