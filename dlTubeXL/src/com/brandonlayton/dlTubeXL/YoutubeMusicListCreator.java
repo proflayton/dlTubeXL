@@ -223,6 +223,7 @@ public class YoutubeMusicListCreator extends JFrame
 		ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
 		pbUpdater.setValue(0);
 		boolean last = false;
+		int inc = (int)(100/list.length);
 		for(int i = 0 ; i < list.length; i++)
 		{
 			String url = list[i];
@@ -230,9 +231,14 @@ public class YoutubeMusicListCreator extends JFrame
 			{
 				url = url.substring(0,url.indexOf("&list"));
 			}
+			if(url.equals(""))
+			{
+				pbUpdater.incValue(inc);
+				continue;
+			}
 			if(i == list.length-1)
 				last = true;
-			Runnable dlT = new DownloadThread(list[i],(int)(100/list.length),last); 
+			Runnable dlT = new DownloadThread(list[i],inc,last); 
 			executor.execute(dlT);
 		}
 		executor.shutdown();
@@ -288,6 +294,7 @@ public class YoutubeMusicListCreator extends JFrame
 						if(last)
 						{
 							pbUpdater.setString("DONE");
+							JOptionPane.showMessageDialog(null, "DONE");
 						}
 						return;
 					}
@@ -332,6 +339,7 @@ public class YoutubeMusicListCreator extends JFrame
 			if(last)
 			{
 				pbUpdater.setString("DONE");
+				JOptionPane.showMessageDialog(null, "DONE");
 			}
 		}
 		
