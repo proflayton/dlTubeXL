@@ -1,15 +1,11 @@
 package com.brandonlayton.dlTubeXL;
 
+public class Main {
 
-public class Main 
-{
-	
-	
-	
 	public static void main(String[] args) 
 	{
-		MainGUI gui = new MainGUI();
-		gui.setVisible(true);
+		YoutubeMusicListCreator listCreator = new YoutubeMusicListCreator();
+		listCreator.setVisible(true);
 	}
 
 }
