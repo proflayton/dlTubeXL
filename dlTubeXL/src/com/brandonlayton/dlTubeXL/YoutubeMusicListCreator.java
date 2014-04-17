@@ -8,8 +8,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
@@ -17,8 +20,12 @@ import java.util.concurrent.Executors;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -35,6 +42,10 @@ public class YoutubeMusicListCreator extends JFrame
 	private int WIDTH  = 400;
 	private int HEIGHT = 800;
 	
+	private JMenuBar  menuBar;
+	private JMenu 	  file;
+	private JMenuItem setSavePath;
+	
 	private JTextField 	searchField;
 	private JButton	  	searchButton;
 	private JButton		clearSearchButton;
@@ -43,13 +54,17 @@ public class YoutubeMusicListCreator extends JFrame
 	private JTextArea 	selectedArea;
 	private JScrollPane searchScroll;
 	private JScrollPane selectedAreaScroll;
+	private JProgressBar progressBar;
+	private ProgressBarUpdater pbUpdater;
+	private Thread pbuThread;
 	
 	private static String baseQueryURL = "https://www.youtube.com/results?search_query=";
+	private String savePath = "";
 
 	//private Vector<TubeListElement> selected = new Vector<TubeListElement>();
 	
 	private int concurrentThreads = 0;
-	private int maxThreads 		  = 1;
+	private int maxThreads 		  = 6;
 	
 	public YoutubeMusicListCreator()
 	{
@@ -80,10 +95,21 @@ public class YoutubeMusicListCreator extends JFrame
 		dlButton = new JButton("Download List");
 		dlButton.addActionListener(new DlListener());
 		
-		this.add(topPanel	  , getConstraints(0,0,1,0.1,GridBagConstraints.WEST,GridBagConstraints.BOTH));
-		this.add(searchScroll, getConstraints(0,1,1,0.4,GridBagConstraints.WEST,GridBagConstraints.BOTH));
-		this.add(selectedArea , getConstraints(0,5,1,0.4,GridBagConstraints.WEST,GridBagConstraints.BOTH));
+		menuBar = new JMenuBar();
+		file = new JMenu("File");
+		setSavePath = new JMenuItem("Set Save Path");
+		
+		progressBar = new JProgressBar(0,100);
+		progressBar.setStringPainted(true);
+		pbUpdater = new ProgressBarUpdater(progressBar);
+		Thread pbuThread = new Thread(pbUpdater);
+		pbuThread.start();
+		
+		this.add(topPanel	  , getConstraints(0,0,1.0,0.1,GridBagConstraints.WEST,GridBagConstraints.BOTH));
+		this.add(searchScroll , getConstraints(0,1,1.0,0.4,GridBagConstraints.WEST,GridBagConstraints.BOTH));
+		this.add(selectedArea , getConstraints(0,5,1.0,0.4,GridBagConstraints.WEST,GridBagConstraints.BOTH));
 		this.add(dlButton	  , getConstraints(0,7,0.5,0.1,GridBagConstraints.WEST,GridBagConstraints.BOTH));
+		this.add(progressBar  , getConstraints(0,8,1.0,0.1,GridBagConstraints.WEST,GridBagConstraints.BOTH));
 		
 		this.pack();
 	}
@@ -183,40 +209,56 @@ public class YoutubeMusicListCreator extends JFrame
 	
 	private void Download()
 	{
+		BufferedReader prefsBIS = new BufferedReader(new InputStreamReader(Main.class.getClassLoader().getResourceAsStream("preferences/prefs.prefs")));
+		String line = "";
+		try {
+			line = prefsBIS.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "ERROR LOADING PREFERENCES");
+			return;
+		}
+		savePath = line;
 		String[] list = this.selectedArea.getText().split("\n");
 		ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
+		pbUpdater.setValue(0);
+		boolean last = false;
 		for(int i = 0 ; i < list.length; i++)
 		{
-			Runnable dlT = new DownloadThread(list[i]); 
+			String url = list[i];
+			if(url.contains("list"))
+			{
+				url = url.substring(0,url.indexOf("&list"));
+			}
+			if(i == list.length-1)
+				last = true;
+			Runnable dlT = new DownloadThread(list[i],(int)(100/list.length),last); 
 			executor.execute(dlT);
 		}
 		executor.shutdown();
-		while(!executor.isTerminated())
-		{
-			
-		}
-		System.out.println("FINISHED");
 	}
 	
 	private class DownloadThread implements Runnable
 	{
 		private Runtime rt;
 		String url;
+		int val = 0;
+		boolean last = false;
 		
-		public DownloadThread(String url)
+		public DownloadThread(String url, int val, boolean last)
 		{
 			this.url = url; 
 			rt = Runtime.getRuntime();
+			this.val = val;
+			this.last = last;
 		}
 		
 		public void run()
 		{
 			log("Started");
 			concurrentThreads++;
-			String lameExe = Main.class.getClassLoader().getResource("dependencies/lame.exe").getPath();
 			String youtubeDlExe = Main.class.getClassLoader().getResource("dependencies/youtube-dl.exe").getPath();
 			String ffmpegExe = Main.class.getClassLoader().getResource("dependencies/ffmpeg/bin/ffmpeg.exe").getPath();
-			log(lameExe);
 			log(youtubeDlExe);
 			log(ffmpegExe);
 			BufferedReader in = null;
@@ -242,18 +284,29 @@ public class YoutubeMusicListCreator extends JFrame
 					if(output.contains("has already been downloaded"))
 					{
 						log(title + " has already been downloaded!");
+						pbUpdater.incValue((int)val);
+						if(last)
+						{
+							pbUpdater.setString("DONE");
+						}
 						return;
 					}
 				}
 				String dlPath = output.split("Destination: ")[1].trim();
 				log("DL PATH: " + dlPath);
-				String path = "";
 				try {
-					String ffmpegCmd = ffmpegExe + " -i \"" + dlPath + "\" -f mp2 \"" + path + title + ".mp3\"" ;
+					//makes the path if necessary
+					File saveFile = new File(savePath);
+					saveFile.mkdirs();
+					//convert!
+					String ffmpegCmd = ffmpegExe + " -i \"" + dlPath + "\" -f mp2 \"" + savePath + title + ".mp3\"" ;
 					log(ffmpegCmd);
 					Process ffmpeg = rt.exec(ffmpegCmd);
 					ffmpeg.waitFor();
 					
+					//Cleanup the temp files
+					File tempFile = new File(dlPath);
+					tempFile.delete();
 				} catch (IOException e) {
 					e.printStackTrace();
 				} catch (InterruptedException e) {
@@ -275,12 +328,69 @@ public class YoutubeMusicListCreator extends JFrame
 			}
 			concurrentThreads--;
 			log("Ended");
+			pbUpdater.incValue(val);
+			if(last)
+			{
+				pbUpdater.setString("DONE");
+			}
 		}
 		
 		private void log(String logging)
 		{
 			System.out.println(Thread.currentThread().getName() + "--" + logging);
 		}
+	}
+	
+	private class ProgressBarUpdater implements Runnable
+	{
+		
+		private JProgressBar jpb;
+		private int value = 0;
+		private boolean running = true;
+		
+		public ProgressBarUpdater(JProgressBar jpb)
+		{
+			this.jpb = jpb;
+			jpb.setMaximum(100);
+		}
+
+		public void setValue(int value)
+		{
+			this.value = value;
+			this.setString(this.value + "%");
+		}
+		
+		public void incValue(int inc)
+		{
+			this.setValue(this.value + inc);
+		}
+		
+		public void setString(String txt)
+		{
+			this.jpb.setString(txt);
+		}
+		
+		public void setRunning(boolean running)
+		{
+			this.running = running;
+		}
+		
+		@Override
+		public void run() 
+		{
+			do
+			{
+				this.jpb.setValue(this.value);
+				//System.out.println(this.value);
+				try
+				{
+					Thread.sleep(100L);
+				}
+				catch(Exception e) { }
+			}
+			while(running);
+		}
+		
 	}
 
 	/****
