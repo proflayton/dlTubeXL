@@ -5,6 +5,7 @@
 
 # Package Files #
 *.jar
+!dlTubeXL - Compiled/*.jar
 *.war
 *.ear
 
